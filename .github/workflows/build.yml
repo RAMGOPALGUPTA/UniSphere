@@ -1,16 +1,60 @@
-name: Frontend build
+name: UniSphere build and database smoke test
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - run: npm run build
+      - name: Install frontend
+        run: npm install
+      - name: Install API
+        run: npm install --prefix server
+      - name: Build frontend
+        run: npm run build
+      - name: Check backend syntax
+        run: node --check server/src/index.js && node --check server/src/db.js
+      - name: Create schema and seed database
+        env:
+          MYSQL_PWD: root
+        run: |
+          mysql -h 127.0.0.1 -uroot < database/schema.sql
+          mysql -h 127.0.0.1 -uroot unisphere < database/seed.sql
+          mysql -h 127.0.0.1 -uroot -e "USE unisphere; SELECT COUNT(*) AS students FROM students; SELECT COUNT(*) AS courses FROM courses;"
+      - name: API database smoke test
+        env:
+          PORT: 4000
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: root
+          DB_NAME: unisphere
+          CLIENT_ORIGIN: http://localhost:5173
+        run: |
+          node server/src/index.js > /tmp/unisphere-api.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:4000/api/health; then break; fi
+            sleep 2
+          done
+          curl --fail http://127.0.0.1:4000/api/lab/run/joins
+          curl --fail http://127.0.0.1:4000/api/lab/run/views
+          curl --fail http://127.0.0.1:4000/api/students
+          curl --fail http://127.0.0.1:4000/api/reports/fee-dues
