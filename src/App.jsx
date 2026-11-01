@@ -73,7 +73,8 @@ const pageMeta = {
   Hostel:['Campus living, organised.','Manage residence capacity and student allocations.'],
   Library:['Knowledge at every student’s fingertips.','Keep an eye on circulation, resources and due dates.'],
   Transport:['Every route, accounted for.','Review fleet activity and campus transport assignments.'],
-  'ADBMS Lab':['Learn by running real database operations.','Explore SQL, relational design, transactions, indexing, views and triggers.'],\n  Reports:['Evidence behind every decision.','Explore campus performance and export a report.'],
+  'ADBMS Lab':['Learn by running real database operations.','Explore SQL, relational design, transactions, indexing, views and triggers.'],
+  Reports:['Evidence behind every decision.','Explore campus performance and export a report.'],
   Settings:['Make UniSphere yours.','Manage your local dashboard experience and preferences.']
 };
 
